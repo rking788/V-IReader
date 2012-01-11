@@ -29,18 +29,29 @@
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
     self.window = [[[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]] autorelease];
+   
     // Override point for customization after application launch.
+    UIColor* navBarColor = [UIColor colorWithRed: (57.0 / 255.0) green: (62.0 / 255.0) blue: (64.0 / 255.0) alpha: 1.0f];
     if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone) {
         PTMasterViewController *masterViewController = [[[PTMasterViewController alloc] initWithNibName:@"PTMasterViewController_iPhone" bundle:nil] autorelease];
         self.navigationController = [[[UINavigationController alloc] initWithRootViewController:masterViewController] autorelease];
+        [self.navigationController.navigationBar setTintColor: navBarColor];
+        
         self.window.rootViewController = self.navigationController;
     } else {
+        // Set up the master view controller
         PTMasterViewController *masterViewController = [[[PTMasterViewController alloc] initWithNibName:@"PTMasterViewController_iPad" bundle:nil] autorelease];
         UINavigationController *masterNavigationController = [[[UINavigationController alloc] initWithRootViewController:masterViewController] autorelease];
+        [masterNavigationController.navigationBar setTintColor: navBarColor];
         
+        // Set up the detail view controller
         PTDetailViewController *detailViewController = [[[PTDetailViewController alloc] initWithNibName:@"PTDetailViewController_iPad" bundle:nil] autorelease];
         UINavigationController *detailNavigationController = [[[UINavigationController alloc] initWithRootViewController:detailViewController] autorelease];
-    	
+    	 [detailNavigationController.navigationBar setTintColor: navBarColor];
+        
+        // Assign this detail view controller to the master view controller property so it will update the interface
+        [masterViewController setDetailViewController: detailViewController];
+        
         self.splitViewController = [[[UISplitViewController alloc] init] autorelease];
         self.splitViewController.delegate = detailViewController;
         self.splitViewController.viewControllers = [NSArray arrayWithObjects:masterNavigationController, detailNavigationController, nil];

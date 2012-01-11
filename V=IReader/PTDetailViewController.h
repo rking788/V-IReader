@@ -8,9 +8,11 @@
 
 #import <UIKit/UIKit.h>
 
+@class PTFeedEntry;
+
 @interface PTDetailViewController : UIViewController <UISplitViewControllerDelegate>
 
-@property (strong, nonatomic) id detailItem;
+@property (strong, nonatomic) PTFeedEntry* detailItem;
 
 @property (strong, nonatomic) IBOutlet UILabel *detailDescriptionLabel;
 

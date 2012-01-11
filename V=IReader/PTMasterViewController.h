@@ -12,6 +12,9 @@
 
 @interface PTMasterViewController : UITableViewController
 
+@property (retain, nonatomic) IBOutlet UITableViewCell *entryCell;
+
 @property (strong, nonatomic) PTDetailViewController *detailViewController;
+@property (strong, nonatomic) NSArray* entryArr;
 
 @end

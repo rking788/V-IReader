@@ -7,18 +7,26 @@
 //
 
 #import "PTMasterViewController.h"
-
 #import "PTDetailViewController.h"
+#import "PTFeedEntry.h"
+#import "ASIHTTPRequest.h"
+#import "JSONKit.h"
+
+#define TITLE_TAG   30
+#define PREVIEW_TAG 31
 
 @implementation PTMasterViewController
 
+@synthesize entryCell = _entryCell;
 @synthesize detailViewController = _detailViewController;
+@synthesize entryArr = _entryArr;
+
 
 - (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil
 {
     self = [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil];
     if (self) {
-        self.title = NSLocalizedString(@"Master", @"Master");
+        self.title = @"Articles";
         if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad) {
             self.clearsSelectionOnViewWillAppear = NO;
             self.contentSizeForViewInPopover = CGSizeMake(320.0, 600.0);
@@ -30,6 +38,8 @@
 - (void)dealloc
 {
     [_detailViewController release];
+    [_entryArr release];
+    [_entryCell release];
     [super dealloc];
 }
 
@@ -44,14 +54,22 @@
 - (void)viewDidLoad
 {
     [super viewDidLoad];
-	// Do any additional setup after loading the view, typically from a nib.
-    if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad) {
-        [self.tableView selectRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0] animated:NO scrollPosition:UITableViewScrollPositionMiddle];
-    }
+	
+    // Do any additional setup after loading the view, typically from a nib.
+    //if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad) {
+    //    [self.tableView selectRowAtIndexPath: [NSIndexPath indexPathForRow:0 inSection:0] animated:NO scrollPosition UITableViewScrollPositionMiddle];
+    //}
+    
+    // Make an asynchronous request for the Feed data
+    NSURL *url = [NSURL URLWithString: @"https://ajax.googleapis.com/ajax/services/feed/load?q=http://feeds.feedburner.com/ommalik&v=1.0"];
+    ASIHTTPRequest *request = [ASIHTTPRequest requestWithURL:url];
+    [request setDelegate:self];
+    [request startAsynchronous];
 }
 
 - (void)viewDidUnload
 {
+    [self setEntryCell:nil];
     [super viewDidUnload];
     // Release any retained subviews of the main view.
     // e.g. self.myOutlet = nil;
@@ -87,7 +105,7 @@
     }
 }
 
-// Customize the number of sections in the table view.
+// There will only be one section in the TableView (for now?)
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
 {
     return 1;
@@ -95,24 +113,31 @@
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
-    return 1;
+    return [self.entryArr count];
 }
 
 // Customize the appearance of table view cells.
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    static NSString *CellIdentifier = @"Cell";
+    static NSString *CellIdentifier = @"ArticleEntryCell";
+    static NSString *CellNib = @"PTArticleCell_iPhone";
     
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:CellIdentifier];
-    if (cell == nil) {
-        cell = [[[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:CellIdentifier] autorelease];
-        if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone) {
-            cell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
-        }
+    if (cell == nil) {        
+        [[NSBundle mainBundle] loadNibNamed: CellNib owner:self options:nil];
+        
+        cell = self.entryCell;
     }
 
-    // Configure the cell.
-    cell.textLabel.text = NSLocalizedString(@"Detail", @"Detail");
+    // Assign the article title to the cell's title field
+    UILabel* titleLbl = (UILabel*) [cell viewWithTag: TITLE_TAG];
+    [titleLbl setText: [[self.entryArr objectAtIndex: indexPath.row] title]];
+    
+    /* By setting the style to None in the Nib and setting the style to 
+     * single line here, the empty rows will not have separators
+     */
+    [tableView setSeparatorStyle: UITableViewCellSeparatorStyleSingleLine];
+    
     return cell;
 }
 
@@ -159,9 +184,65 @@
     if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone) {
 	    if (!self.detailViewController) {
 	        self.detailViewController = [[[PTDetailViewController alloc] initWithNibName:@"PTDetailViewController_iPhone" bundle:nil] autorelease];
+            
 	    }
+        
+        [self.detailViewController setDetailItem: [self.entryArr objectAtIndex: indexPath.row]];
         [self.navigationController pushViewController:self.detailViewController animated:YES];
     }
+    else if([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad){
+        if(self.detailViewController){
+            [self.detailViewController setDetailItem: [self.entryArr objectAtIndex: indexPath.row]];
+        }
+    }
 }
+
+#pragma mark - ASIHTTPRequestDelegate Protocol Methods
+
+- (void)requestFinished:(ASIHTTPRequest *)request
+{
+    // Use when fetching text data
+    NSString *responseString = [request responseString];
+    
+    NSDictionary* responseDict = [responseString objectFromJSONString];
+    
+    NSDictionary* dataDict = [responseDict objectForKey: @"responseData"];
+    NSDictionary* feedDict = [dataDict objectForKey: @"feed"];
+    
+    NSArray* entriesArr = [feedDict objectForKey: @"entries"];
+
+    // Fill an array with the entries from the JSON response
+    NSMutableArray* tempArr = [[NSMutableArray alloc] initWithCapacity: [entriesArr count]];
+    for(NSDictionary* entry in entriesArr){
+        PTFeedEntry* fEntry = [[PTFeedEntry alloc] initWithJSONEntry: entry];
+
+        [tempArr addObject: fEntry];
+        
+        [fEntry release];
+    }
+    
+    // Create an immutable copy from the temporary mutable array
+    self.entryArr = [NSArray arrayWithArray: (NSArray*) tempArr];
+    [tempArr release];
+    
+    // Reload the data in the table when processing is finished
+    [self.tableView reloadData];
+    
+    // On the iPad select the first story so it is displayed in the Detail View
+    if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad) {
+        [self.tableView selectRowAtIndexPath: [NSIndexPath indexPathForRow:0 inSection:0] animated:NO scrollPosition:UITableViewScrollPositionMiddle];
+    }
+}
+
+- (void)requestFailed:(ASIHTTPRequest *)request
+{
+    NSError *error = [request error];
+
+    // TODO: If an error occurred then display an error message for the 
+    // user to try again later
+    
+}
+
+
 
 @end
