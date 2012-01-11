@@ -133,6 +133,9 @@
     UILabel* titleLbl = (UILabel*) [cell viewWithTag: TITLE_TAG];
     [titleLbl setText: [[self.entryArr objectAtIndex: indexPath.row] title]];
     
+    UIImageView* previewImageView = (UIImageView*) [cell viewWithTag: PREVIEW_TAG];
+    [previewImageView setImage: [[self.entryArr objectAtIndex: indexPath.row] previewImage]];
+    
     /* By setting the style to None in the Nib and setting the style to 
      * single line here, the empty rows will not have separators
      */
@@ -230,7 +233,11 @@
     
     // On the iPad select the first story so it is displayed in the Detail View
     if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad) {
-        [self.tableView selectRowAtIndexPath: [NSIndexPath indexPathForRow:0 inSection:0] animated:NO scrollPosition:UITableViewScrollPositionMiddle];
+        [self.tableView selectRowAtIndexPath: [NSIndexPath indexPathForRow: 0 inSection: 0] animated:NO scrollPosition:UITableViewScrollPositionMiddle];
+        
+        if(self.detailViewController){
+            [self.detailViewController setDetailItem: [self.entryArr objectAtIndex: 0]];
+        }    
     }
 }
 

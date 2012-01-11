@@ -17,14 +17,21 @@
 @implementation PTDetailViewController
 
 @synthesize detailItem = _detailItem;
-@synthesize detailDescriptionLabel = _detailDescriptionLabel;
+@synthesize titleLbl = _titleLbl;
+@synthesize authorLbl = _authorLbl;
+@synthesize dateLbl = _dateLbl;
+@synthesize contentWebView = _contentWebView;
 @synthesize masterPopoverController = _masterPopoverController;
 
 - (void)dealloc
 {
     [_detailItem release];
-    [_detailDescriptionLabel release];
+//    [_detailDescriptionLabel release];
     [_masterPopoverController release];
+    [_titleLbl release];
+    [_authorLbl release];
+    [_dateLbl release];
+    [_contentWebView release];
     [super dealloc];
 }
 
@@ -47,10 +54,14 @@
 
 - (void)configureView
 {
-    // Update the user interface for the detail item.
+    // Update the user interface with the info from the selected article
 
     if (self.detailItem) {
-        self.detailDescriptionLabel.text = self.detailItem.title;
+//        self.detailDescriptionLabel.text = self.detailItem.title;
+        [self.titleLbl setText: self.detailItem.title];
+        [self.authorLbl setText: self.detailItem.author];
+        [self.dateLbl setText: self.detailItem.publishedDateStr];
+        [self.contentWebView loadHTMLString: self.detailItem.content baseURL: nil];
     }
 }
 
@@ -71,6 +82,10 @@
 
 - (void)viewDidUnload
 {
+    [self setTitleLbl:nil];
+    [self setAuthorLbl:nil];
+    [self setDateLbl:nil];
+    [self setContentWebView:nil];
     [super viewDidUnload];
     // Release any retained subviews of the main view.
     // e.g. self.myOutlet = nil;

@@ -13,7 +13,9 @@
 @interface PTDetailViewController : UIViewController <UISplitViewControllerDelegate>
 
 @property (strong, nonatomic) PTFeedEntry* detailItem;
-
-@property (strong, nonatomic) IBOutlet UILabel *detailDescriptionLabel;
+@property (retain, nonatomic) IBOutlet UILabel *titleLbl;
+@property (retain, nonatomic) IBOutlet UILabel *authorLbl;
+@property (retain, nonatomic) IBOutlet UILabel *dateLbl;
+@property (retain, nonatomic) IBOutlet UIWebView *contentWebView;
 
 @end
